@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Matching Game — Pharmacy Vocabulary</title>
+  <style>
+    :root{--bg:#f7fbff;--card:#fff;--accent:#0b63d6;--ok:#2e7d32;--bad:#c62828}
+    body{font-family:Inter, system-ui, Arial; background:var(--bg); color:#111; margin:0; padding:16px}
+    .wrap{max-width:980px;margin:0 auto}
+    h1{margin:0 0 8px;font-size:20px;text-align:center}
+    p.lead{margin:0 0 18px;color:#334;text-align:center}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
+    button{background:var(--accent);color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer;flex:1 1 auto;max-width:150px}
+    button.secondary{background:#fff;color:var(--accent);border:1px solid #cfe3ff}
+    .board{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .col{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 20px rgba(7,40,89,0.06)}
+    .list{display:grid;gap:8px}
+    .item{padding:10px;border-radius:8px;background:#f3f8ff;border:1px solid rgba(11,99,214,0.06);cursor:pointer;word-break:break-word}
+    .item.selected{outline:3px solid rgba(11,99,214,0.14)}
+    .item.matched{background:linear-gradient(90deg,#e8f7ee,#eef7ff);opacity:0.9;text-decoration:line-through;color:#666}
+    .status{margin-top:10px;font-weight:600;text-align:center}
+    footer{margin-top:18px;font-size:13px;color:#444;text-align:center}
+    @media (max-width:720px){.board{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Word Matching Game — Pharmacy Vocabulary</h1>
+    <p class="lead">Klik sebuah <strong>word</strong> di kiri lalu klik definisi yang sesuai di kanan. Cocokkan semua pasangan untuk menang.</p>
+
+    <div class="controls">
+      <button id="shuffleBtn">Shuffle</button>
+      <button id="resetBtn" class="secondary">Reset</button>
+      <button id="downloadBtn" class="secondary">Download HTML</button>
+      <button id="copyLinkBtn" class="secondary">Copy Share Link</button>
+    </div>
+    <div style="text-align:center;margin-bottom:10px">Score: <span id="score">0</span> / <span id="total">0</span></div>
+
+    <div class="board">
+      <div class="col">
+        <h3>Words</h3>
+        <div id="words" class="list"></div>
+      </div>
+      <div class="col">
+        <h3>Definitions</h3>
+        <div id="defs" class="list"></div>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+    <footer>Made for English for Pharmacy — Meeting 1 vocabulary.</footer>
+  </div>
+
+  <script>
+    const pairs = [
+      ["Pharmacy","Apotek; ilmu atau profesi yang berhubungan dengan obat-obatan"],
+      ["Drug","Obat; bisa berarti narkoba (makna negatif)"],
+      ["Drugstore","Toko obat; menjual obat bebas dan barang non-medis"],
+      ["Medication","Obat-obatan yang digunakan untuk mengobati penyakit"],
+      ["Pharmacist","Apoteker; orang yang berlisensi untuk meracik dan menyerahkan obat"],
+      ["Druggist","Istilah lama untuk apoteker; konotasi negatif"],
+      ["Prescription","Resep; instruksi tertulis dari dokter untuk obat"],
+      ["Prescriber","Tenaga medis yang berwenang menulis resep"],
+      ["Over-the-counter drugs (OTCs)","Obat bebas; bisa dibeli tanpa resep"],
+      ["Cosmetics","Kosmetik; produk perawatan/kecantikan"],
+      ["Profession","Profesi; pekerjaan yang memerlukan pelatihan khusus"],
+      ["Ethics","Etika; standar perilaku"],
+      ["Adhere","Mematuhi; mengikuti aturan"],
+      ["Dispense","Menyerahkan/membagikan obat"],
+      ["Internship","Magang"],
+      ["Licensure examination","Ujian lisensi"],
+      ["Eligible","Memenuhi syarat"],
+      ["Requirement","Persyaratan"],
+      ["Public health","Kesehatan masyarakat"],
+      ["Rational use of medication","Penggunaan obat secara rasional"],
+      ["Double-check","Memeriksa ulang"],
+      ["Vending machine","Mesin penjual otomatis"],
+      ["Medication use","Penggunaan obat"],
+      ["Standards of conduct","Standar perilaku"],
+      ["Code of ethics","Kode etik"]
+    ];
+
+    let state = {pairs: [],selectedWord: null,selectedDef: null,matched: new Set(),score: 0};
+
+    function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+    function init(){state.pairs = pairs.map((p,i)=>({id:i,word:p[0],def:p[1]}));state.matched = new Set();state.score = 0;render();}
+    function render(){
+      const wordsEl=document.getElementById('words');wordsEl.innerHTML='';
+      const defsEl=document.getElementById('defs');defsEl.innerHTML='';
+      const wordList=shuffle([...state.pairs]).map(x=>({id:x.id,text:x.word}));
+      const defList=shuffle([...state.pairs]).map(x=>({id:x.id,text:x.def}));
+      document.getElementById('total').textContent=state.pairs.length;document.getElementById('score').textContent=state.score;
+      for(const w of wordList){const div=document.createElement('div');div.className='item';div.textContent=w.text;div.dataset.id=w.id;if(state.matched.has(String(w.id))){div.classList.add('matched')}div.addEventListener('click',()=>selectWord(div));wordsEl.appendChild(div);}
+      for(const d of defList){const div=document.createElement('div');div.className='item';div.textContent=d.text;div.dataset.id=d.id;if(state.matched.has(String(d.id))){div.classList.add('matched')}div.addEventListener('click',()=>selectDef(div));defsEl.appendChild(div);}
+      updateStatus('Click a word then click its definition.');
+    }
+    function selectWord(el){if(el.classList.contains('matched'))return;clearSelection('word');el.classList.add('selected');state.selectedWord=el.dataset.id;tryMatch();}
+    function selectDef(el){if(el.classList.contains('matched'))return;clearSelection('def');el.classList.add('selected');state.selectedDef=el.dataset.id;tryMatch();}
+    function clearSelection(type){if(type==='word'||type===undefined){document.querySelectorAll('#words .item').forEach(i=>i.classList.remove('selected'))}if(type==='def'||type===undefined){document.querySelectorAll('#defs .item').forEach(i=>i.classList.remove('selected'))}}
+    function tryMatch(){if(state.selectedWord===null||state.selectedDef===null)return;const w=state.selectedWord;const d=state.selectedDef;if(w===d){state.matched.add(String(w));state.score++;document.getElementById('score').textContent=state.score;updateStatus('Benar! Pair matched.');document.querySelectorAll('[data-id]').forEach(el=>{if(el.dataset.id===String(w))el.classList.add('matched');el.classList.remove('selected');});state.selectedWord=null;state.selectedDef=null;if(state.score===state.pairs.length){updateStatus('Selamat — semua pasangan cocok! 🎉');}}else{updateStatus('Salah. Coba lagi.');setTimeout(()=>{clearSelection();state.selectedWord=null;state.selectedDef=null;},600);}}
+    function updateStatus(text){document.getElementById('status').textContent=text}
+    document.getElementById('shuffleBtn').addEventListener('click',()=>{render();updateStatus('Board diacak.');});
+    document.getElementById('resetBtn').addEventListener('click',()=>{init();updateStatus('Board direset.');});
+    document.getElementById('downloadBtn').addEventListener('click',()=>{const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='word-matching-pharmacy-vocab.html';a.click();URL.revokeObjectURL(url);});
+    document.getElementById('copyLinkBtn').addEventListener('click',()=>{
+      const link=window.location.href;
+      if(/^(http|https):\/\//.test(link)){
+        navigator.clipboard.writeText(link).then(()=>{
+          updateStatus('Link copied to clipboard: '+link);
+        }).catch(()=>{
+          updateStatus('Unable to copy link.');
+        });
+      } else {
+        updateStatus('Upload this file to a hosting service (GitHub Pages, Netlify, etc.) to get a shareable link.');
+      }
+    });
+    init();
+  </script>
+</body>
+</html>
